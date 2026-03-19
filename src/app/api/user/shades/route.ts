@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { refreshAccessToken } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import prisma from '@/lib/prisma';
 
 // 获取用户兴趣标签（Shades）
 export async function GET(request: NextRequest) {
