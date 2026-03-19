@@ -1,0 +1,114 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// User 表 - 存储 SecondMe 用户信息（auth 模块必需）
+model User {
+  id              String   @id @default(cuid())
+  secondmeUserId  String   @unique @map("secondme_user_id")
+  userId          String?  @map("user_id")
+  name            String?  @map("name")
+  email           String?  @map("email")
+  bio             String?  @map("bio")
+  selfIntroduction String?  @map("self_introduction")
+  profileCompleteness Int?  @map("profile_completeness")
+  route           String?  @map("route")
+  accessToken     String   @map("access_token")
+  refreshToken    String   @map("refresh_token")
+  tokenExpiresAt  DateTime @map("token_expires_at")
+  nickname        String?  @map("nickname")
+  avatarUrl       String?  @map("avatar_url")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  messages     ChatMessage[]
+
+  // 关联笔记
+  notes           Note[]
+
+  @@map("users")
+}
+
+// 笔记表（note 模块）
+model Note {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  content     String   @db.Text
+  targetUserId String? @map("target_user_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notes")
+}
+
+// 聊天消息表
+model ChatMessage {
+  id              String   @id @default(cuid())
+  userId          String   @map("user_id")
+  gameId          String?  @map("game_id")
+  roomId          String?  @map("room_id")
+  role            String   @map("role") // 'user', 'assistant', 'system'
+  content         String   @db.Text
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("chat_messages")
+}
+
+// 游戏表
+model Game {
+  id          String   @id @default(cuid())
+  name        String
+  poster      String
+  description String   @db.Text
+  playerCount Int      @map("player_count")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  rooms       Room[]
+
+  @@map("games")
+}
+
+// 房间表
+model Room {
+  id          String   @id @default(cuid())
+  gameId      String   @map("game_id")
+  name        String
+  maxPlayers  Int      @map("max_players")
+  online      Boolean  @default(true)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  game        Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  players     Player[]
+
+  @@map("rooms")
+}
+
+// 玩家表
+model Player {
+  id          String   @id @default(cuid())
+  roomId      String?  @map("room_id")
+  name        String
+  avatar      String?
+  online      Boolean  @default(true)
+  role        String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  room        Room?    @relation(fields: [roomId], references: [id], onDelete: SetNull)
+
+  @@map("players")
+}
