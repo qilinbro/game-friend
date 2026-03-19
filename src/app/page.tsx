@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 // 游戏数据类型定义
@@ -34,7 +34,7 @@ interface Player {
   role: string | null;
 }
 
-export default function Home() {
+function HomeContent() {
   const searchParams = useSearchParams();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -1116,4 +1116,19 @@ ${memoryText}
       </div>
     </div>
   );
+}
+
+export default function Home() {
+ return (
+   <Suspense fallback={
+     <div className="min-h-screen flex items-center justify-center bg-gradient-blue">
+       <div className="text-center">
+         <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+         <p className="text-blue-600">加载中...</p>
+       </div>
+     </div>
+   }>
+     <HomeContent />
+   </Suspense>
+ );
 }
