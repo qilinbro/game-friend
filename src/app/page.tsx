@@ -461,7 +461,7 @@ function GameDetail({ game, onBack, onSelectRoom, setActiveTab, setSelectedGame 
                   </div>
                   <div>
                     <h4 className="font-semibold text-slate-800">{room.name}</h4>
-                    <p className="text-sm text-slate-400">{room.players}/{room.maxPlayers} 人</p>
+                    <p className="text-sm text-slate-400">{(room.players?.length || 0)}/{room.maxPlayers} 人</p>
                   </div>
                 </div>
                 <button
@@ -603,7 +603,7 @@ function RoomChat({ room, onBack }: { room: Room; onBack: () => void }) {
       setTimeout(() => {
         setMessages(prev => [...prev, {
           role: 'assistant',
-          content: `收到！房间 "${room.name}" 已有 ${room.players} 位玩家。让我们一起开始游戏吧！`
+          content: `收到！房间 "${room.name}" 已有 ${((room as any).players?.length || 0)} 位玩家。让我们一起开始游戏吧！`
         }]);
       }, 500);
     } finally {
@@ -620,7 +620,7 @@ function RoomChat({ room, onBack }: { room: Room; onBack: () => void }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          message: `请帮我邀请更多的玩家加入「${room.name}」房间，这是一个${(room as any).gameName}房间，目前有${(room as any).players}/${room.maxPlayers}人。请推荐一些合适的玩家。`,
+          message: `请帮我邀请更多的玩家加入「${room.name}」房间，这是一个${(room as any).gameName}房间，目前有${((room as any).players?.length || 0)}/${room.maxPlayers}人。请推荐一些合适的玩家。`,
           systemPrompt: '你是游戏搭子 AI 助手，帮助用户邀请合适的玩家加入游戏房间。',
         }),
       });
