@@ -307,10 +307,6 @@ function LandingPage() {
             <h2 className="text-3xl font-bold text-white mb-2">{slides[currentSlide].title}</h2>
             <p className="text-white/70 mb-3">{slides[currentSlide].description}</p>
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-xl">👥</span>
-                <span className="text-white/90 text-sm">{slides[currentSlide].players}</span>
-              </div>
               <div className="flex gap-1.5">
                 {slides.map((_, index) => (
                   <button
@@ -365,10 +361,78 @@ interface GameHallProps {
 }
 
 function GameHall({ games, onSelectGame }: GameHallProps) {
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  useEffect(() => {
+    if (games.length > 0) {
+      const interval = setInterval(() => {
+        setCurrentSlide((prev) => (prev + 1) % games.length);
+      }, 4000);
+      return () => clearInterval(interval);
+    }
+  }, [games.length]);
+
+  const featuredGame = games[currentSlide];
+
   return (
     <div>
+      {/* Featured Game Carousel */}
+      {featuredGame && (
+        <div className="mb-8 relative rounded-2xl overflow-hidden h-72">
+          <img
+            src={featuredGame.poster}
+            alt={featuredGame.name}
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
+          <div className="absolute bottom-0 left-0 right-0 p-8">
+            <div className="flex items-center justify-between">
+              <div className="max-w-2xl">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="tag-game bg-blue-500/20 text-blue-300 border-blue-400/30">
+                    热门推荐
+                  </span>
+                  <span className="online-dot"></span>
+                </div>
+                <h2 className="text-4xl font-bold text-white mb-3">{featuredGame.name}</h2>
+                <p className="text-white/80 mb-4">{featuredGame.description}</p>
+                <div className="flex items-center gap-6">
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">🎮</span>
+                    <span className="text-white/90">{featuredGame.rooms.length} 个房间</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">👥</span>
+                    <span className="text-white/90">{featuredGame.playerCount} 玩家在线</span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => onSelectGame(featuredGame)}
+                  className="btn-blue mt-4"
+                >
+                  立即加入
+                </button>
+              </div>
+              <div className="flex gap-1.5">
+                {games.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentSlide(index)}
+                    className={`w-2 h-2 rounded-full transition-all ${
+                      index === currentSlide
+                        ? 'bg-blue-400 w-6'
+                        : 'bg-white/30 hover:bg-white/50'
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="mb-8">
-        <h2 className="text-2xl font-bold text-slate-800 mb-2">游戏大厅</h2>
+        <h2 className="text-2xl font-bold text-slate-800 mb-2">全部游戏</h2>
         <p className="text-slate-500">选择你喜欢的游戏，开始聊天</p>
       </div>
 
