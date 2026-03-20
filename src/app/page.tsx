@@ -674,9 +674,12 @@ function GameDetail({ game, onBack, onSelectRoom, setActiveTab, setSelectedGame 
           };
           const matchedGameId = gameIdMap[gameData.name] || gameData.id;
           const permanentRooms = PERMANENT_ROOMS.filter(r => r.gameId === matchedGameId);
-          
+
           if (permanentRooms.length > 0) {
-            gameData.rooms = permanentRooms;
+            // 合并数据库房间和常驻房间（去重）
+            const dbRoomIds = (gameData.rooms || []).map((r: any) => r.id);
+            const permanentToAdd = permanentRooms.filter(r => !dbRoomIds.includes(r.id));
+            gameData.rooms = [...(gameData.rooms || []), ...permanentToAdd];
           }
           setFullGame(gameData);
         }

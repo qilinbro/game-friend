@@ -53,15 +53,17 @@ model Note {
 // 聊天消息表
 model ChatMessage {
   id              String   @id @default(cuid())
-  userId          String   @map("user_id")
+  userId          String?  @map("user_id")
   gameId          String?  @map("game_id")
   roomId          String?  @map("room_id")
   role            String   @map("role") // 'user', 'assistant', 'system'
   content         String   @db.Text
+  playerName     String?  @map("player_name")
+  playerAvatar   String?  @map("player_avatar")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user            User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("chat_messages")
 }
