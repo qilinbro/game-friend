@@ -1236,13 +1236,9 @@ function RoomChat({ room, onBack }: { room: Room; onBack: () => void }) {
       // 调用 SecondMe API 的流式聊天功能
       const callAgentChat = async (message: string) => {
         try {
-          // 需要从环境变量或后端获取 SecondMe token
-          const token = localStorage.getItem('secondme_token') || '';
-          
-          const response = await fetch('https://api.mindverse.com/gate/lab/api/secondme/chat/stream', {
+          const response = await fetch('/api/agent-chat', {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
