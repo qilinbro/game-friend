@@ -537,7 +537,7 @@ function GameHall({ games, onSelectGame }: GameHallProps) {
               </div>
             </div>
 
-            {/* 聊天区域 */}
+            {/* 房间列表 */}
             <div className="p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
@@ -546,11 +546,19 @@ function GameHall({ games, onSelectGame }: GameHallProps) {
                 </div>
               </div>
 
-              {/* 简单聊天预览 */}
-              <div className="bg-slate-50 rounded-xl p-3">
-                <p className="text-sm text-slate-500 text-center">
-                  点击进入 {game.name} 聊天室
-                </p>
+              {/* 房间列表预览 */}
+              <div className="space-y-2">
+                {PERMANENT_ROOMS.filter(r => r.gameId === game.id).slice(0, 3).map((room) => (
+                  <div key={room.id} className="bg-slate-50 rounded-lg p-2 text-xs">
+                    <p className="text-slate-700 font-medium truncate">{room.name}</p>
+                    <p className="text-slate-400">{(room.players?.length || 0)}/{room.maxPlayers} 人</p>
+                  </div>
+                ))}
+                {PERMANENT_ROOMS.filter(r => r.gameId === game.id).length > 3 && (
+                  <p className="text-xs text-slate-400 text-center py-1">
+                    + 更多房间
+                  </p>
+                )}
               </div>
             </div>
           </div>
