@@ -645,10 +645,17 @@ function GameDetail({ game, onBack, onSelectRoom, setActiveTab, setSelectedGame 
   const [newRoomMaxPlayers, setNewRoomMaxPlayers] = useState(4);
   const [creating, setCreating] = useState(false);
 
-  // Fetch game details with players
+  // Initialize with passed game or fetch details
   useEffect(() => {
-    fetchGameDetails();
-  }, [game.id]);
+    // 如果游戏已经有房间数据（来自游戏大厅），则直接使用
+    if (game.rooms && game.rooms.length > 0) {
+      setFullGame(game);
+      setLoading(false);
+    } else {
+      // 否则从 API 获取
+      fetchGameDetails();
+    }
+  }, [game.id, game.rooms]);
 
   const fetchGameDetails = async () => {
     try {
@@ -656,11 +663,28 @@ function GameDetail({ game, onBack, onSelectRoom, setActiveTab, setSelectedGame 
       if (response.ok) {
         const data = await response.json();
         if (data.code === 0) {
-          setFullGame(data.data);
+          const gameData = data.data;
+          // 为获取的游戏数据关联常驻房间
+          const gameIdMap: {[key: string]: string} = {
+            '原神': 'game-ysyx',
+            '无畏契约': 'game-wzqy',
+            '王者荣耀': 'game-wzyy',
+            '三角洲行动': 'game-dxhy',
+            '火影忍者': 'game-jyry',
+          };
+          const matchedGameId = gameIdMap[gameData.name] || gameData.id;
+          const permanentRooms = PERMANENT_ROOMS.filter(r => r.gameId === matchedGameId);
+          
+          if (permanentRooms.length > 0) {
+            gameData.rooms = permanentRooms;
+          }
+          setFullGame(gameData);
         }
       }
     } catch (error) {
       console.error('获取游戏详情失败:', error);
+      // 如果 API 失败，使用传入的游戏数据
+      setFullGame(game);
     } finally {
       setLoading(false);
     }
