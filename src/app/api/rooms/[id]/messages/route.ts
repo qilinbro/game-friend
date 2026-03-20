@@ -4,12 +4,13 @@ import prisma from '@/lib/prisma';
 // GET - 获取房间消息
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '50');
-    const roomId = params.id;
+    const roomId = id;
 
     const messages = await prisma.chatMessage.findMany({
       where: { roomId },
@@ -33,12 +34,13 @@ export async function GET(
 // POST - 保存房间消息
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = await request.json();
     const { role, content, playerName, playerAvatar } = body;
-    const roomId = params.id;
+    const roomId = id;
 
     // 从 cookie 获取用户 ID（如果有）
     const cookies = request.headers.get('cookie') || '';
