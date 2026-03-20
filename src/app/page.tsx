@@ -154,13 +154,30 @@ function HomeContent() {
       if (response.ok) {
         const data = await response.json();
         if (data.code === 0) {
-          const gamesData = data.data.map((g: any) => ({
-            ...g,
-            rooms: g.rooms.map((r: any) => ({
-              ...r,
-              players: r._count?.players || 0,
-            })),
-          }));
+          const gamesData = data.data.map((g: any) => {
+            // 根据游戏名称匹配常驻房间
+            const gameIdMap: {[key: string]: string} = {
+              '原神': 'game-ysyx',
+              '无畏契约': 'game-wzqy',
+              '王者荣耀': 'game-wzyy',
+              '三角洲行动': 'game-dxhy',
+              '火影忍者': 'game-jyry',
+              '第五人格': 'game-dwrg',
+              '和平精英': 'game-hpjy',
+              '战地风云6': 'game-zdfyy6',
+              'CS2': 'game-cs2'
+            };
+            const matchedGameId = gameIdMap[g.name] || g.id;
+            const permanentRooms = PERMANENT_ROOMS.filter(r => r.gameId === matchedGameId);
+            
+            return {
+              ...g,
+              rooms: permanentRooms.length > 0 ? permanentRooms : g.rooms.map((r: any) => ({
+                ...r,
+                players: r._count?.players || 0,
+              })),
+            };
+          });
           setGames(gamesData);
         }
       }
@@ -483,7 +500,7 @@ function GameHall({ games, onSelectGame }: GameHallProps) {
                 <div className="flex items-center gap-6">
                   <div className="flex items-center gap-2">
                     <span className="text-2xl">🎮</span>
-                    <span className="text-white/90">{PERMANENT_ROOMS.filter(r => r.gameId === featuredGame.id).length} 个房间</span>
+                    <span className="text-white/90">{(featuredGame.rooms || []).length} 个房间</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-2xl">👥</span>
@@ -542,19 +559,19 @@ function GameHall({ games, onSelectGame }: GameHallProps) {
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <span className="online-dot"></span>
-                  <span className="text-sm text-blue-500">{PERMANENT_ROOMS.filter(r => r.gameId === game.id).length} 个房间</span>
+                  <span className="text-sm text-blue-500">{(game.rooms || []).length} 个房间</span>
                 </div>
               </div>
 
               {/* 房间列表预览 */}
               <div className="space-y-2">
-                {PERMANENT_ROOMS.filter(r => r.gameId === game.id).slice(0, 3).map((room) => (
+                {(game.rooms || []).slice(0, 3).map((room) => (
                   <div key={room.id} className="bg-slate-50 rounded-lg p-2 text-xs">
                     <p className="text-slate-700 font-medium truncate">{room.name}</p>
                     <p className="text-slate-400">{(room.players?.length || 0)}/{room.maxPlayers} 人</p>
                   </div>
                 ))}
-                {PERMANENT_ROOMS.filter(r => r.gameId === game.id).length > 3 && (
+                {(game.rooms || []).length > 3 && (
                   <p className="text-xs text-slate-400 text-center py-1">
                     + 更多房间
                   </p>
@@ -744,7 +761,7 @@ function GameDetail({ game, onBack, onSelectRoom, setActiveTab, setSelectedGame 
             </button>
           </div>
           <div className="space-y-4">
-            {PERMANENT_ROOMS.filter(room => room.gameId === game.id).map((room) => (
+            {(game.rooms || []).map((room) => (
               <div key={room.id} className="room-card p-4 flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center text-2xl">
@@ -885,7 +902,7 @@ function RoomList({ onSelectRoom, games }: { onSelectRoom: (room: Room) => void;
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
                     <span className="text-xl">🎮</span>
-                    <span className="text-white/90">{PERMANENT_ROOMS.filter(r => r.gameId === currentGame.id).length} 个房间</span>
+                    <span className="text-white/90">{(currentGame.rooms || []).length} 个房间</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-xl">👥</span>
