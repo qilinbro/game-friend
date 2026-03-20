@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: game-friends
+    repo: <your-github-repo-url>
+    branch: main
+    buildCommand: npm run build
+    startCommand: npm start
+    domains:
+      - game-friends-production-2ef2.up.railway.app
+    envVariables:
+      NODE_ENV: production
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      SECONDME_CLIENT_ID: ${{ secrets.SECONDME_CLIENT_ID }}
+      SECONDME_CLIENT_SECRET: ${{ secrets.SECONDME_CLIENT_SECRET }}
+      SECONDME_REDIRECT_URI: https://game-friends-production-2ef2.up.railway.app/api/auth/callback/fg
+      SECONDME_API_BASE_URL: https://api.mindverse.com/gate/lab
+      SECONDME_OAUTH_URL: https://go.second.me/oauth/
+      SECONDME_TOKEN_ENDPOINT: https://api.mindverse.com/gate/lab/api/oauth/token/code
+      SECONDME_REFRESH_ENDPOINT: https://api.mindverse.com/gate/lab/api/oauth/token/refresh
+
+  - type: postgresql
+    name: game-friends-db
+    version: 15
+    plan: starter
+    region: us-west
