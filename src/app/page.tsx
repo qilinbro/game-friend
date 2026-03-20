@@ -13,6 +13,90 @@ interface Game {
   rooms: Room[];
 }
 
+// 常驻房间数据
+const PERMANENT_ROOMS: Room[] = [
+  {
+    id: 'perm-ysyx-1',
+    gameId: 'game-ysyx',
+    name: '原神·冒险者聊天室',
+    maxPlayers: 10,
+    online: true,
+    players: [],
+    gameName: '原神',
+    gamePoster: '/pictures/原神.jpg'
+  },
+  {
+    id: 'perm-ysyx-2',
+    gameId: 'game-ysyx',
+    name: '原神·深渊挑战组',
+    maxPlayers: 4,
+    online: true,
+    players: [],
+    gameName: '原神',
+    gamePoster: '/pictures/原神.jpg'
+  },
+  {
+    id: 'perm-wzqy-1',
+    gameId: 'game-wzqy',
+    name: '无畏契约·竞技场',
+    maxPlayers: 5,
+    online: true,
+    players: [],
+    gameName: '无畏契约',
+    gamePoster: '/pictures/无畏契约.jpg'
+  },
+  {
+    id: 'perm-wzqy-2',
+    gameId: 'game-wzqy',
+    name: '无畏契约·新手房',
+    maxPlayers: 5,
+    online: true,
+    players: [],
+    gameName: '无畏契约',
+    gamePoster: '/pictures/无畏契约.jpg'
+  },
+  {
+    id: 'perm-wzyy-1',
+    gameId: 'game-wzyy',
+    name: '王者荣耀·排位组队',
+    maxPlayers: 5,
+    online: true,
+    players: [],
+    gameName: '王者荣耀',
+    gamePoster: '/pictures/王者荣耀.jpg'
+  },
+  {
+    id: 'perm-wzyy-2',
+    gameId: 'game-wzyy',
+    name: '王者荣耀·娱乐休闲',
+    maxPlayers: 5,
+    online: true,
+    players: [],
+    gameName: '王者荣耀',
+    gamePoster: '/pictures/王者荣耀.jpg'
+  },
+  {
+    id: 'perm-dxhy-1',
+    gameId: 'game-dxhy',
+    name: '三角洲行动·战队训练',
+    maxPlayers: 8,
+    online: true,
+    players: [],
+    gameName: '三角洲行动',
+    gamePoster: '/pictures/三角洲行动.jpg'
+  },
+  {
+    id: 'perm-jyry-1',
+    gameId: 'game-jyry',
+    name: '火影忍者·组队副本',
+    maxPlayers: 6,
+    online: true,
+    players: [],
+    gameName: '火影忍者',
+    gamePoster: '/pictures/火影忍者.jpg'
+  }
+];
+
 interface Room {
   id: string;
   gameId: string;
@@ -399,7 +483,7 @@ function GameHall({ games, onSelectGame }: GameHallProps) {
                 <div className="flex items-center gap-6">
                   <div className="flex items-center gap-2">
                     <span className="text-2xl">🎮</span>
-                    <span className="text-white/90">{featuredGame.rooms.length} 个房间</span>
+                    <span className="text-white/90">{PERMANENT_ROOMS.filter(r => r.gameId === featuredGame.id).length} 个房间</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-2xl">👥</span>
@@ -458,7 +542,7 @@ function GameHall({ games, onSelectGame }: GameHallProps) {
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <span className="online-dot"></span>
-                  <span className="text-sm text-blue-500">{game.rooms.length} 个房间</span>
+                  <span className="text-sm text-blue-500">{PERMANENT_ROOMS.filter(r => r.gameId === game.id).length} 个房间</span>
                 </div>
               </div>
 
@@ -652,7 +736,7 @@ function GameDetail({ game, onBack, onSelectRoom, setActiveTab, setSelectedGame 
             </button>
           </div>
           <div className="space-y-4">
-            {game.rooms.map((room) => (
+            {PERMANENT_ROOMS.filter(room => room.gameId === game.id).map((room) => (
               <div key={room.id} className="room-card p-4 flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center text-2xl">
@@ -665,7 +749,7 @@ function GameDetail({ game, onBack, onSelectRoom, setActiveTab, setSelectedGame 
                 </div>
                 <button
                   onClick={() => {
-                    const fullRoom = { ...room, gameId: game.id, gameName: game.name };
+                    const fullRoom = { ...room, gameName: game.name };
                     onSelectRoom(fullRoom);
                     setActiveTab('rooms');
                     setSelectedGame(null);
@@ -761,9 +845,7 @@ function GameDetail({ game, onBack, onSelectRoom, setActiveTab, setSelectedGame 
 // Room List - All rooms from all games
 function RoomList({ onSelectRoom, games }: { onSelectRoom: (room: Room) => void; games: Game[] }) {
   const [currentSlide, setCurrentSlide] = useState(0);
-  const allRooms = games.flatMap(game =>
-    game.rooms.map(room => ({ ...room, gameName: game.name, gamePoster: game.poster }))
-  );
+  const allRooms = PERMANENT_ROOMS;
 
   useEffect(() => {
     if (games.length > 0) {
@@ -795,7 +877,7 @@ function RoomList({ onSelectRoom, games }: { onSelectRoom: (room: Room) => void;
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
                     <span className="text-xl">🎮</span>
-                    <span className="text-white/90">{currentGame.rooms.length} 个房间</span>
+                    <span className="text-white/90">{PERMANENT_ROOMS.filter(r => r.gameId === currentGame.id).length} 个房间</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-xl">👥</span>

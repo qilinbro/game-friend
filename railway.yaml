@@ -3,8 +3,8 @@ services:
     name: game-friends
     repo: <your-github-repo-url>
     branch: main
-    buildCommand: npm run build
-    startCommand: npm start
+    buildCommand: prisma generate && next build
+    startCommand: npx prisma migrate deploy && npx tsx scripts/sync-data.ts && npm start
     domains:
       - game-friends-production-2ef2.up.railway.app
     envVariables:
