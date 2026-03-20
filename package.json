@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "prisma generate && next build",
     "start": "next start",
-    "postdeploy": "prisma migrate deploy",
+    "postdeploy": "prisma migrate deploy && npx tsx scripts/sync-data.ts",
     "lint": "eslint",
     "prisma:migrate": "prisma migrate deploy",
     "prisma:generate": "prisma generate"
