@@ -1026,12 +1026,37 @@ function RoomList({ onSelectRoom, games }: { onSelectRoom: (room: Room) => void;
 }
 
 // Room Chat
+// Room Chat
 function RoomChat({ room, onBack }: { room: Room; onBack: () => void }) {
-  const [messages, setMessages] = useState<{ role: string; content: string; id?: string }[]>([]);
+  const [messages, setMessages] = useState<{ role: string; content: string; id?: string; playerName?: string; playerAvatar?: string }[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [invitingAgent, setInvitingAgent] = useState(false);
+  const [userInfo, setUserInfo] = useState<any>(null);
+  const [agentActive, setAgentActive] = useState(false);
+  const [sessionId, setSessionId] = useState<string>('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // 获取 SecondMe 用户信息（包括头像和用户名）
+  useEffect(() => {
+    const fetchUserInfo = async () => {
+      try {
+        // 先从本地 API 获取 token
+        const authResponse = await fetch('/api/user/info');
+        if (authResponse.ok) {
+          const authData = await authResponse.json();
+          if (authData.code === 0) {
+            // 这里应该从环境变量获取 SecondMe token
+            // 或者从后端 API 获取
+            setUserInfo(authData.data);
+          }
+        }
+      } catch (error) {
+        console.error('获取用户信息失败:', error);
+      }
+    };
+    fetchUserInfo();
+  }, []);
 
   // Load messages from localStorage on mount
   useEffect(() => {
@@ -1091,68 +1116,116 @@ function RoomChat({ room, onBack }: { room: Room; onBack: () => void }) {
   };
 
   const handleInviteAgent = async () => {
-    if (invitingAgent) return;
+    if (invitingAgent || !userInfo || agentActive) return;
     setInvitingAgent(true);
 
     try {
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: `请帮我邀请更多的玩家加入「${room.name}」房间，这是一个${(room as any).gameName}房间，目前有${((room as any).players?.length || 0)}/${room.maxPlayers}人。请推荐一些合适的玩家。`,
-          systemPrompt: '你是游戏搭子 AI 助手，帮助用户邀请合适的玩家加入游戏房间。',
-        }),
-      });
+      // 使用当前登录用户的信息作为 Agent
+      const agentName = `${userInfo.name}的专属助手`;
+      const agentAvatar = userInfo.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo.name || 'agent'}`;
 
-      if (response.ok) {
-        const reader = response.body?.getReader();
-        const decoder = new TextDecoder();
+      setAgentActive(true);
 
-        if (reader) {
-          let assistantContent = '';
-          const assistantMessageId = `agent-${Date.now()}`;
-          setMessages(prev => [...prev, { role: 'assistant', content: '', id: assistantMessageId }]);
+      // 邀请成功消息
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: `${agentName} 加入了房间！`,
+        playerName: agentName,
+        playerAvatar: agentAvatar,
+        id: `join-${Date.now()}`
+      }]);
 
-          let currentEvent = '';
+      // 调用 SecondMe API 的流式聊天功能
+      const callAgentChat = async (message: string) => {
+        try {
+          // 需要从环境变量或后端获取 SecondMe token
+          const token = localStorage.getItem('secondme_token') || '';
+          
+          const response = await fetch('https://api.mindverse.com/gate/lab/api/secondme/chat/stream', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              message: message,
+              sessionId: sessionId || undefined,
+              model: 'anthropic/claude-sonnet-4-5',
+              systemPrompt: `你是${agentName}，一个友好热情的游戏搭子。你应该用简短、友好的语气与房间内的其他玩家交互，鼓励团队合作。不要输出过长的回复，保持在 30 字以内。`
+            })
+          });
 
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
+          if (response.ok) {
+            const reader = response.body?.getReader();
+            const decoder = new TextDecoder();
+            let agentContent = '';
+            let newSessionId = sessionId;
+            const assistantMessageId = `agent-${Date.now()}`;
 
-            const chunk = decoder.decode(value, { stream: true });
-            const lines = chunk.split('\n');
+            setMessages(prev => [...prev, {
+              role: 'assistant',
+              content: '',
+              playerName: agentName,
+              playerAvatar: agentAvatar,
+              id: assistantMessageId
+            }]);
 
-            for (const line of lines) {
-              if (line.startsWith('event: ')) {
-                currentEvent = line.slice(7).trim();
-                continue;
-              }
+            if (reader) {
+              while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
 
-              if (line.startsWith('data: ')) {
-                const data = line.slice(6).trim();
+              const chunk = decoder.decode(value, { stream: true });
+              const lines = chunk.split('\n');
 
-                if (data === '[DONE]') {
-                  break;
+              for (const line of lines) {
+                if (line.startsWith('event: ')) {
+                  const eventType = line.slice(7).trim();
+                  if (eventType === 'session') continue;
+                  continue;
                 }
 
-                try {
-                  const parsed = JSON.parse(data);
+                if (line.startsWith('data: ')) {
+                  const data = line.slice(6).trim();
+                  if (data === '[DONE]') break;
 
-                  if (parsed.choices && parsed.choices[0]?.delta?.content) {
-                    assistantContent += parsed.choices[0].delta.content;
-                    setMessages(prev =>
-                      prev.map((msg: any) =>
-                        msg.id === assistantMessageId
-                          ? { ...msg, content: assistantContent }
-                          : msg
-                      )
-                    );
-                  }
-                } catch (e) {}
+                  try {
+                    const parsed = JSON.parse(data);
+                    if (parsed.sessionId) {
+                      newSessionId = parsed.sessionId;
+                      setSessionId(newSessionId);
+                    }
+                    if (parsed.choices && parsed.choices[0]?.delta?.content) {
+                      agentContent += parsed.choices[0].delta.content;
+                      setMessages(prev =>
+                        prev.map((msg: any) =>
+                          msg.id === assistantMessageId
+                            ? { ...msg, content: agentContent }
+                            : msg
+                        )
+                      );
+                    }
+                  } catch (e) {}
+                }
+              }
               }
             }
           }
+        } catch (error) {
+          console.error('调用 Agent API 失败:', error);
         }
+      };
+
+      // Agent 自动进行 3 轮对话
+      const agentPrompts = [
+        `大家好！我是${agentName}，很高兴加入这个房间。我们来一起玩${room.name}吧！`,
+        `这是一个${room.gameName}房间，现在已经有${(room as any).maxPlayers || 5}个位置。让我们找更多的队友！`,
+        `谁想要我的帮助？我已经准备好开始游戏了！`
+      ];
+
+      for (let i = 0; i < agentPrompts.length; i++) {
+        await new Promise(resolve => setTimeout(resolve, Math.random() * 2000 + 2000));
+        await callAgentChat(agentPrompts[i]);
       }
     } catch (error) {
       console.error('邀请 Agent 失败:', error);
@@ -1186,19 +1259,29 @@ function RoomChat({ room, onBack }: { room: Room; onBack: () => void }) {
       {/* Chat Area */}
       <div className="bg-white border border-slate-200 rounded-b-2xl overflow-hidden">
         <div className="h-[400px] overflow-y-auto p-4 space-y-4">
-          {messages.map((msg, i) => (
-            <div
-              key={i}
-              className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              <div className={`chat-bubble ${msg.role === 'user' ? 'chat-bubble-user' : msg.role === 'system' ? 'bg-slate-100 text-slate-500 text-center w-full max-w-full' : 'chat-bubble-assistant'}`}>
-                {msg.role === 'assistant' && (
-                  <div className="text-xs text-blue-500 mb-1">🤖 AI 助手</div>
-                )}
-                {msg.content}
-              </div>
-            </div>
-          ))}
+           {messages.map((msg, i) => (
+             <div
+               key={i}
+               className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} gap-2`}
+             >
+               {msg.role !== 'user' && msg.role !== 'system' && msg.playerAvatar && (
+                 <img
+                   src={msg.playerAvatar}
+                   alt={msg.playerName}
+                   className="w-8 h-8 rounded-full flex-shrink-0"
+                 />
+               )}
+               <div className={`chat-bubble ${msg.role === 'user' ? 'chat-bubble-user' : msg.role === 'system' ? 'bg-slate-100 text-slate-500 text-center w-full max-w-full' : 'chat-bubble-assistant'}`}>
+                 {msg.role === 'assistant' && msg.playerName && (
+                   <div className="text-xs text-blue-500 mb-1">🤖 {msg.playerName}</div>
+                 )}
+                 {msg.role === 'assistant' && !msg.playerName && (
+                   <div className="text-xs text-blue-500 mb-1">🤖 AI 助手</div>
+                 )}
+                 {msg.content}
+               </div>
+             </div>
+           ))}
           {loading && (
             <div className="flex justify-start">
               <div className="bg-slate-100 px-4 py-2 rounded-2xl">
