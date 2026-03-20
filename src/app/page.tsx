@@ -213,31 +213,119 @@ function HomeContent() {
 
 // Landing Page
 function LandingPage() {
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  const slides = [
+    {
+      image: '/pictures/原神.jpg',
+      title: '原神',
+      description: '开放世界冒险游戏',
+    },
+    {
+      image: '/pictures/王者荣耀.jpg',
+      title: '王者荣耀',
+      description: '5v5 公平竞技',
+    },
+    {
+      image: '/pictures/无畏契约.jpg',
+      title: '无畏契约',
+      description: '战术射击竞技',
+    },
+    {
+      image: '/pictures/战地风云6.jpg',
+      title: '战地风云6',
+      description: '64v64 大战场',
+    },
+    {
+      image: '/pictures/CSgo2.jpg',
+      title: 'CS2',
+      description: '战术射击竞技',
+    }
+  ];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % slides.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [slides.length]);
+
   return (
     <div className="min-h-screen bg-gradient-hero relative overflow-hidden">
+      {/* Carousel Background */}
+      <div className="absolute inset-0 overflow-hidden">
+        {slides.map((slide, index) => (
+          <div
+            key={index}
+            className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
+              index === currentSlide ? 'opacity-100' : 'opacity-0'
+            }`}
+          >
+            <img
+              src={slide.image}
+              alt={slide.title}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/80"></div>
+          </div>
+        ))}
+      </div>
+
       {/* Decorative elements */}
-      <div className="absolute top-0 left-0 w-full h-full overflow-hidden">
-        <div className="absolute top-20 left-10 w-64 h-64 bg-blue-200/30 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-cyan-200/30 rounded-full blur-3xl"></div>
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+        <div className="absolute top-20 left-10 w-64 h-64 bg-blue-500/20 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl"></div>
       </div>
 
       <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-4">
         <div className="text-center mb-12">
           <div className="inline-block mb-6 relative">
-            <img src="/pictures/游戏搭子logo.png" alt="游戏搭子" className="w-32 h-32 animate-float" />
+            <div className="absolute inset-0 bg-blue-500/30 rounded-full blur-2xl animate-pulse"></div>
+            <img src="/pictures/游戏搭子logo.png" alt="游戏搭子" className="w-32 h-32 animate-float relative" />
           </div>
 
           <h1 className="text-5xl md:text-6xl font-black mb-4">
-            <span className="text-blue-600">游戏</span>
-            <span className="text-slate-700">搭子</span>
+            <span className="text-white">游戏</span>
+            <span className="text-blue-400">搭子</span>
           </h1>
 
-          <p className="text-xl text-slate-500 mb-2">
+          <p className="text-xl text-white/80 mb-2">
             找到志同道合的游戏伙伴
           </p>
-          <p className="text-slate-400">
+          <p className="text-white/60">
             基于 AI 智能匹配 · 实时组队开黑
           </p>
+        </div>
+
+        {/* Carousel Info */}
+        <div className="mb-12 max-w-md">
+          <div className="bg-black/40 backdrop-blur-md rounded-2xl p-6 border border-white/10">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
+              <span className="text-white/60 text-sm">热门推荐</span>
+            </div>
+            <h2 className="text-3xl font-bold text-white mb-2">{slides[currentSlide].title}</h2>
+            <p className="text-white/70 mb-3">{slides[currentSlide].description}</p>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">👥</span>
+                <span className="text-white/90 text-sm">{slides[currentSlide].players}</span>
+              </div>
+              <div className="flex gap-1.5">
+                {slides.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentSlide(index)}
+                    className={`w-2 h-2 rounded-full transition-all ${
+                      index === currentSlide
+                        ? 'bg-blue-400 w-6'
+                        : 'bg-white/30 hover:bg-white/50'
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Features */}
@@ -249,18 +337,18 @@ function LandingPage() {
           ].map((feature, i) => (
             <div
               key={i}
-              className={`stagger-item bg-white p-6 rounded-2xl shadow-md hover:shadow-lg transition-all text-center`}
+              className={`stagger-item bg-white/10 backdrop-blur-md p-6 rounded-2xl border border-white/10 hover:bg-white/20 hover:border-white/20 transition-all text-center`}
             >
               <span className="text-4xl mb-3 block">{feature.icon}</span>
-              <h3 className="text-lg font-bold text-slate-700 mb-1">{feature.title}</h3>
-              <p className="text-sm text-slate-400">{feature.desc}</p>
+              <h3 className="text-lg font-bold text-white mb-1">{feature.title}</h3>
+              <p className="text-sm text-white/60">{feature.desc}</p>
             </div>
           ))}
         </div>
 
         <button
           onClick={() => window.location.href = '/api/auth/login'}
-          className="btn-blue text-lg px-10 py-4 shadow-lg hover:shadow-xl"
+          className="btn-blue text-lg px-10 py-4 shadow-2xl hover:shadow-blue-500/50"
         >
           <span className="mr-2">🚀</span>
           立即开始
@@ -512,12 +600,67 @@ function GameDetail({ game, onBack, onSelectRoom, setActiveTab, setSelectedGame 
 
 // Room List - All rooms from all games
 function RoomList({ onSelectRoom, games }: { onSelectRoom: (room: Room) => void; games: Game[] }) {
+  const [currentSlide, setCurrentSlide] = useState(0);
   const allRooms = games.flatMap(game =>
     game.rooms.map(room => ({ ...room, gameName: game.name, gamePoster: game.poster }))
   );
 
+  useEffect(() => {
+    if (games.length > 0) {
+      const interval = setInterval(() => {
+        setCurrentSlide((prev) => (prev + 1) % games.length);
+      }, 4000);
+      return () => clearInterval(interval);
+    }
+  }, [games.length]);
+
+  const currentGame = games[currentSlide];
+
   return (
     <div>
+      {/* Game Carousel */}
+      {currentGame && (
+        <div className="mb-8 relative rounded-2xl overflow-hidden h-64">
+          <img
+            src={currentGame.poster}
+            alt={currentGame.name}
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent"></div>
+          <div className="absolute bottom-0 left-0 right-0 p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-3xl font-bold text-white mb-2">{currentGame.name}</h2>
+                <p className="text-white/80 mb-2">{currentGame.description}</p>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">🎮</span>
+                    <span className="text-white/90">{currentGame.rooms.length} 个房间</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">👥</span>
+                    <span className="text-white/90">{currentGame.playerCount} 玩家</span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-1.5">
+                {games.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentSlide(index)}
+                    className={`w-2 h-2 rounded-full transition-all ${
+                      index === currentSlide
+                        ? 'bg-blue-400 w-6'
+                        : 'bg-white/30 hover:bg-white/50'
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="mb-8">
         <h2 className="text-2xl font-bold text-slate-800 mb-2">房间列表</h2>
         <p className="text-slate-500">加入房间，立即开始游戏</p>
