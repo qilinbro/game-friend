@@ -486,6 +486,10 @@ function GameDetail({ game, onBack, onSelectRoom, setActiveTab, setSelectedGame 
 }) {
   const [fullGame, setFullGame] = useState<Game | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showCreateRoom, setShowCreateRoom] = useState(false);
+  const [newRoomName, setNewRoomName] = useState('');
+  const [newRoomMaxPlayers, setNewRoomMaxPlayers] = useState(4);
+  const [creating, setCreating] = useState(false);
 
   // Fetch game details with players
   useEffect(() => {
@@ -585,6 +589,41 @@ function GameDetail({ game, onBack, onSelectRoom, setActiveTab, setSelectedGame 
     }
   };
 
+  // 创建房间
+  const handleCreateRoom = async () => {
+    if (!newRoomName.trim() || creating) return;
+
+    setCreating(true);
+    try {
+      const response = await fetch('/api/rooms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          gameId: game.id,
+          name: newRoomName,
+          maxPlayers: newRoomMaxPlayers
+        })
+      });
+
+      const data = await response.json();
+      if (data.code === 0) {
+        // 刷新游戏详情
+        fetchGameDetails();
+        // 关闭弹窗并重置表单
+        setShowCreateRoom(false);
+        setNewRoomName('');
+        setNewRoomMaxPlayers(4);
+      } else {
+        alert(data.message || '创建房间失败');
+      }
+    } catch (error) {
+      console.error('创建房间失败:', error);
+      alert('创建房间失败，请重试');
+    } finally {
+      setCreating(false);
+    }
+  };
+
   return (
     <div>
       {/* Game Header */}
@@ -603,7 +642,15 @@ function GameDetail({ game, onBack, onSelectRoom, setActiveTab, setSelectedGame 
       <div className="grid md:grid-cols-3 gap-8">
         {/* Room List */}
         <div className="md:col-span-2">
-          <h3 className="text-lg font-bold text-slate-800 mb-4">房间列表</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold text-slate-800">房间列表</h3>
+            <button
+              onClick={() => setShowCreateRoom(true)}
+              className="btn-blue text-sm py-2 px-4"
+            >
+              + 新建房间
+            </button>
+          </div>
           <div className="space-y-4">
             {game.rooms.map((room) => (
               <div key={room.id} className="room-card p-4 flex items-center justify-between">
@@ -658,6 +705,55 @@ function GameDetail({ game, onBack, onSelectRoom, setActiveTab, setSelectedGame 
           </div>
         </div>
       </div>
+
+      {/* Create Room Modal */}
+      {showCreateRoom && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl">
+            <h3 className="text-xl font-bold text-slate-800 mb-4">新建房间</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">房间名称</label>
+                <input
+                  type="text"
+                  value={newRoomName}
+                  onChange={(e) => setNewRoomName(e.target.value)}
+                  placeholder="请输入房间名称"
+                  className="input-clean w-full"
+                  maxLength={50}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">最大人数</label>
+                <select
+                  value={newRoomMaxPlayers}
+                  onChange={(e) => setNewRoomMaxPlayers(parseInt(e.target.value))}
+                  className="input-clean w-full"
+                >
+                  {[2, 3, 4, 5, 6, 8, 10].map(num => (
+                    <option key={num} value={num}>{num} 人</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setShowCreateRoom(false)}
+                className="flex-1 py-3 px-4 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
+              >
+                取消
+              </button>
+              <button
+                onClick={handleCreateRoom}
+                disabled={!newRoomName.trim() || creating}
+                className="flex-1 btn-blue disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {creating ? '创建中...' : '创建'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
