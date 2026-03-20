@@ -1058,24 +1058,77 @@ function RoomChat({ room, onBack }: { room: Room; onBack: () => void }) {
     fetchUserInfo();
   }, []);
 
-  // Load messages from localStorage on mount
+  // Load messages from server on mount
   useEffect(() => {
-    const storageKey = `chat_${room.id || room.name}`;
-    const saved = localStorage.getItem(storageKey);
-    if (saved) {
+    const fetchRoomMessages = async () => {
       try {
-        setMessages(JSON.parse(saved));
-      } catch (e) {
-        setMessages([{ role: 'system', content: '欢迎来到大世界！开始聊天吧~' }]);
+        const response = await fetch(`/api/rooms/${room.id}/messages`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.code === 0 && data.data?.messages) {
+            setMessages(data.data.messages);
+          } else {
+            setMessages([{ role: 'system', content: '欢迎来到大世界！开始聊天吧~' }]);
+          }
+        } else {
+          // 如果 API 不可用，使用 localStorage 作为备选
+          const storageKey = `chat_${room.id || room.name}`;
+          const saved = localStorage.getItem(storageKey);
+          if (saved) {
+            try {
+              setMessages(JSON.parse(saved));
+            } catch (e) {
+              setMessages([{ role: 'system', content: '欢迎来到大世界！开始聊天吧~' }]);
+            }
+          } else {
+            setMessages([{ role: 'system', content: '欢迎来到大世界！开始聊天吧~' }]);
+          }
+        }
+      } catch (error) {
+        console.error('获取房间消息失败:', error);
+        // 网络错误时使用 localStorage
+        const storageKey = `chat_${room.id || room.name}`;
+        const saved = localStorage.getItem(storageKey);
+        if (saved) {
+          try {
+            setMessages(JSON.parse(saved));
+          } catch (e) {
+            setMessages([{ role: 'system', content: '欢迎来到大世界！开始聊天吧~' }]);
+          }
+        } else {
+          setMessages([{ role: 'system', content: '欢迎来到大世界！开始聊天吧~' }]);
+        }
       }
-    } else {
-      setMessages([{ role: 'system', content: '欢迎来到大世界！开始聊天吧~' }]);
-    }
-  }, [room.id, room.name]);
+    };
+    fetchRoomMessages();
+  }, [room.id]);
 
-  // Save messages to localStorage when they change
+  // Auto-scroll to latest message
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  // 定时轮询获取新消息（实时同步）
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const response = await fetch(`/api/rooms/${room.id}/messages?limit=50`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.code === 0 && data.data?.messages) {
+            setMessages(data.data.messages);
+          }
+        }
+      } catch (error) {
+        // 轮询失败时忽略，继续下一次轮询
+      }
+    }, 3000); // 每 3 秒轮询一次
+
+    return () => clearInterval(interval);
+  }, [room.id]);
+
+  // Save messages to localStorage as backup
+  useEffect(() => {
     if (messages.length > 0) {
       const storageKey = `chat_${room.id || room.name}`;
       localStorage.setItem(storageKey, JSON.stringify(messages));
@@ -1086,11 +1139,32 @@ function RoomChat({ room, onBack }: { room: Room; onBack: () => void }) {
     if (!input.trim() || loading) return;
 
     const userMessage = input.trim();
+    const messageId = Date.now().toString();
     setInput('');
-    setMessages(prev => [...prev, { role: 'user', content: userMessage, id: Date.now().toString() }]);
+    
+    // 立即显示用户消息
+    setMessages(prev => [...prev, { role: 'user', content: userMessage, id: messageId }]);
     setLoading(true);
 
     try {
+      // 保存用户消息到服务器
+      const saveResponse = await fetch(`/api/rooms/${room.id}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          role: 'user',
+          content: userMessage,
+          playerName: userInfo?.name,
+          playerAvatar: userInfo?.avatar
+        })
+      });
+
+      if (saveResponse.ok) {
+        const saveData = await saveResponse.json();
+        console.log('消息已保存到服务器:', saveData);
+      }
+
+      // 调用 AI 聊天 API
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1098,18 +1172,39 @@ function RoomChat({ room, onBack }: { room: Room; onBack: () => void }) {
       });
 
       const data = await response.json();
-      if (data.code === 0) {
-        setMessages(prev => [...prev, { role: 'assistant', content: data.data?.content || '收到！' }]);
-      } else {
-        setMessages(prev => [...prev, { role: 'assistant', content: '消息发送失败，请重试。' }]);
+      const assistantMessage = data.data?.content || '收到！';
+      
+      // 显示 AI 回复
+      const assistantId = Date.now().toString();
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: assistantMessage,
+        id: assistantId,
+        playerName: 'AI 助手',
+        playerAvatar: `https://api.dicebear.com/7.x/bottts/svg?seed=ai-assistant`
+      }]);
+
+      // 保存 AI 回复到服务器
+      try {
+        await fetch(`/api/rooms/${room.id}/messages`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            role: 'assistant',
+            content: assistantMessage,
+            playerName: 'AI 助手',
+            playerAvatar: `https://api.dicebear.com/7.x/bottts/svg?seed=ai-assistant`
+          })
+        });
+      } catch (error) {
+        console.error('保存 AI 回复失败:', error);
       }
     } catch (error) {
-      setTimeout(() => {
-        setMessages(prev => [...prev, {
-          role: 'assistant',
-          content: `收到！房间 "${room.name}" 已有 ${((room as any).players?.length || 0)} 位玩家。让我们一起开始游戏吧！`
-        }]);
-      }, 500);
+      console.error('发送消息失败:', error);
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: `收到！房间 "${room.name}" 已有 ${((room as any).players?.length || 0)} 位玩家。让我们一起开始游戏吧！`
+      }]);
     } finally {
       setLoading(false);
     }
