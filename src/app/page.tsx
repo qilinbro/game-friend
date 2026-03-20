@@ -461,19 +461,64 @@ interface GameHallProps {
   onSelectGame: (game: Game) => void;
 }
 
+// 游戏大厅游戏列表（不依赖数据库）
+const GAME_HALL_GAMES: Game[] = [
+  {
+    id: 'game-ysyx',
+    name: '原神',
+    poster: '/pictures/原神.jpg',
+    description: '开放世界冒险游戏',
+    playerCount: 0,
+    rooms: PERMANENT_ROOMS.filter(r => r.gameId === 'game-ysyx')
+  },
+  {
+    id: 'game-wzyy',
+    name: '王者荣耀',
+    poster: '/pictures/王者荣耀.jpg',
+    description: '5v5 公平竞技',
+    playerCount: 0,
+    rooms: PERMANENT_ROOMS.filter(r => r.gameId === 'game-wzyy')
+  },
+  {
+    id: 'game-wzqy',
+    name: '无畏契约',
+    poster: '/pictures/无畏契约.jpg',
+    description: '战术射击竞技',
+    playerCount: 0,
+    rooms: PERMANENT_ROOMS.filter(r => r.gameId === 'game-wzqy')
+  },
+  {
+    id: 'game-zdfyy6',
+    name: '战地风云6',
+    poster: '/pictures/战地风云6.jpg',
+    description: '64v64 大战场',
+    playerCount: 0,
+    rooms: PERMANENT_ROOMS.filter(r => r.gameId === 'game-zdfyy6')
+  },
+  {
+    id: 'game-cs2',
+    name: 'CS2',
+    poster: '/pictures/CSgo2.jpg',
+    description: '战术射击竞技',
+    playerCount: 0,
+    rooms: PERMANENT_ROOMS.filter(r => r.gameId === 'game-cs2')
+  }
+];
+
 function GameHall({ games, onSelectGame }: GameHallProps) {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const hallGames = GAME_HALL_GAMES;
 
   useEffect(() => {
-    if (games.length > 0) {
+    if (hallGames.length > 0) {
       const interval = setInterval(() => {
-        setCurrentSlide((prev) => (prev + 1) % games.length);
+        setCurrentSlide((prev) => (prev + 1) % hallGames.length);
       }, 4000);
       return () => clearInterval(interval);
     }
-  }, [games.length]);
+  }, [hallGames.length]);
 
-  const featuredGame = games[currentSlide];
+  const featuredGame = hallGames[currentSlide];
 
   return (
     <div>
@@ -515,7 +560,7 @@ function GameHall({ games, onSelectGame }: GameHallProps) {
                 </button>
               </div>
               <div className="flex gap-1.5">
-                {games.map((_, index) => (
+                {hallGames.map((_, index) => (
                   <button
                     key={index}
                     onClick={() => setCurrentSlide(index)}
@@ -538,7 +583,7 @@ function GameHall({ games, onSelectGame }: GameHallProps) {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {games.map((game) => (
+        {hallGames.map((game) => (
           <div
             key={game.id}
             className="stagger-item bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-lg transition-all cursor-pointer"
